@@ -1,0 +1,11 @@
+# Installing Docker
+
+- name: Install docker on host
+  yum:
+      name: "*"
+      state: latest
+
+- name: Install docker
+  yum:
+    name: docker
+    state: latest

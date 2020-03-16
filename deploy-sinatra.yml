@@ -1,0 +1,42 @@
+---
+- hosts: sinatra
+  gather_facts: no
+  become: yes
+
+  vars_files:
+    - "{{ playbook_dir }}/vars/main.yml"
+  
+  tasks:
+    - name: Installing docker 
+      include_role:
+        name: roles/docker
+
+    - name: Ensures /root/.aws dir exists
+      file: 
+        path: /root/.aws
+        state: directory
+    
+    - name: Copy AWS Credentials config file
+      template:
+        src: cred_config
+        dest: /root/.aws/credentials
+    
+    - name: Export AWS Pull Credentials
+      shell: export AWS_PROFILE=ecr_login
+
+    - name: Docker login to ECR Registry
+      command: $(aws ecr get-login --no-include-email --region ap-southeast-2)
+
+    - name: Pull simple sinatra image from ECR registry
+      docker_image:
+        name: "{{ ecr_image }}"
+        source: pull
+
+    - name: Start the sinatra container
+      docker_container:
+        name: agent
+        image: "{{ ecr_image }}"
+        state: started
+        restart: yes
+        ports:
+          - "80:9292"
